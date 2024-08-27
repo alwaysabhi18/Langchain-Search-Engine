@@ -1,0 +1,13 @@
+# Python
+*.pyc
+__pycache__/
+
+# Virtual environment
+venv/
+.env
+
+# Streamlit
+.streamlit/
+
+# Jupyter Notebook
+.ipynb_checkpoints/

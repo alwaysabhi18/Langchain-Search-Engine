@@ -1,4 +1,3 @@
-# Import necessary libraries
 import streamlit as st
 import os
 from langchain_groq import ChatGroq
@@ -47,17 +46,28 @@ if prompt:
 
     # Initialize LLM (Large Language Model)
     llm = ChatGroq(groq_api_key=api_key, model_name="Llama3-8b-8192", streaming=True)
-    tools = [search, arxiv, wiki]
+    tools = [wiki, arxiv, search]
 
     # Initialize agent for processing queries
     search_agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, handle_parsing_errors=True)
 
     # Process the query with the agent
-    with st.spinner("Thinking..."):
+    with st.spinner("Gathering information..."):
         st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
-        response = search_agent.run(st.session_state.messages, callbacks=[st_cb])
-        st.session_state.messages.append({'role': 'assistant', "content": response})
+        
+        # Get responses from all tools
+        wiki_response = search_agent.run(prompt, callbacks=[st_cb], tools=[wiki])
+        arxiv_response = search_agent.run(prompt, callbacks=[st_cb], tools=[arxiv])
+        search_response = search_agent.run(prompt, callbacks=[st_cb], tools=[search])
+        
+        # Combine all responses
+        combined_response = f"**Wikipedia:** {wiki_response}\n\n" \
+                            f"**Arxiv:** {arxiv_response}\n\n" \
+                            f"**DuckDuckGo:** {search_response}"
+        
+        # Append the response to chat history
+        st.session_state.messages.append({'role': 'assistant', "content": combined_response})
         
         # Format and display the response
-        formatted_response = response.replace('\n', '<br>')
+        formatted_response = combined_response.replace('\n', '<br>')
         st.markdown(f"**Assistant:** {formatted_response}", unsafe_allow_html=True)
